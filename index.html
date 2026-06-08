@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0e1626">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PPL">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>PPL Tracker</title>
+<style>
+:root{
+  --bg:#0e1626; --bg2:#0a1018; --card:#17223a; --card2:#1d2c49;
+  --line:#2a3a5c; --ink:#eaf0fb; --mut:#8ea2c6; --mut2:#62759b;
+  --gold:#e8be4e; --green:#3ddc91; --greend:#1e7f4f; --red:#ff6b81;
+  --push:#43d17a; --pull:#5aa2f0; --legs:#f0954a; --amber:#f0b955;
+  --r:18px; --safe-b:env(safe-area-inset-bottom);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{
+  background:radial-gradient(120% 60% at 50% -10%, #1a2746 0%, var(--bg) 55%, var(--bg2) 100%);
+  color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased; overscroll-behavior-y:none;
+}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px calc(96px + var(--safe-b));}
+/* top bar */
+.topbar{position:sticky;top:0;z-index:30;backdrop-filter:blur(18px);
+  background:linear-gradient(180deg,rgba(14,22,38,.92),rgba(14,22,38,.6));
+  padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;}
+.topbar .row{max-width:560px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.logo{font-weight:800;font-size:20px;letter-spacing:.5px;display:flex;align-items:center;gap:8px}
+.logo .dot{width:10px;height:10px;border-radius:50%;background:var(--gold);box-shadow:0 0 14px var(--gold)}
+.spacer{flex:1}
+.chip{font-size:11px;font-weight:700;padding:6px 11px;border-radius:999px;background:rgba(232,190,78,.14);
+  color:var(--gold);border:1px solid rgba(232,190,78,.3);white-space:nowrap}
+.gear{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--card);
+  border:1px solid var(--line);font-size:17px;cursor:pointer}
+/* cards */
+.card{background:linear-gradient(165deg,var(--card2),var(--card));border:1px solid var(--line);
+  border-radius:var(--r);padding:18px;margin:14px 0;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.sub{font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--mut2);margin:0 0 10px}
+h2.section{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);margin:26px 4px 6px}
+/* hero next-up */
+.hero{position:relative;overflow:hidden;text-align:center;padding:26px 18px}
+.hero .lbl{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut)}
+.hero .day{font-size:46px;font-weight:900;letter-spacing:-1px;margin:6px 0 2px;line-height:1}
+.hero .meta{color:var(--mut);font-size:13px}
+.hero .glow{position:absolute;inset:-40% 30% auto;height:200px;border-radius:50%;filter:blur(60px);opacity:.5;z-index:0}
+.hero>*{position:relative;z-index:1}
+.cta{display:block;width:100%;margin-top:16px;padding:15px;border:0;border-radius:14px;font-size:16px;font-weight:800;
+  color:#08110b;background:linear-gradient(120deg,var(--green),#7ef0b6);cursor:pointer;letter-spacing:.3px}
+.cta:active{transform:scale(.98)}
+/* stat grid */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.stat .k{font-size:11px;color:var(--mut2);font-weight:700;text-transform:uppercase;letter-spacing:.6px}
+.stat .v{font-size:24px;font-weight:800;margin-top:3px}
+.stat .v small{font-size:13px;color:var(--mut);font-weight:600}
+.pill{display:inline-block;font-size:11px;font-weight:800;padding:4px 9px;border-radius:8px}
+.pill.g{background:rgba(61,220,145,.16);color:var(--green)}
+.pill.a{background:rgba(240,185,85,.16);color:var(--amber)}
+.pill.r{background:rgba(255,107,129,.16);color:var(--red)}
+/* segmented */
+.seg{display:flex;gap:6px;background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:5px;margin:14px 0}
+.seg button{flex:1;border:0;background:transparent;color:var(--mut);font-weight:800;font-size:14px;padding:11px 0;
+  border-radius:10px;cursor:pointer;letter-spacing:.4px;transition:.15s}
+.seg button.on{color:#0b1220}
+.seg button.on[data-d=Push]{background:var(--push)} .seg button.on[data-d=Pull]{background:var(--pull)}
+.seg button.on[data-d=Legs]{background:var(--legs)}
+/* exercise card */
+.ex{padding:16px}
+.ex .top{display:flex;align-items:flex-start;gap:10px}
+.ex .name{font-weight:800;font-size:16px;line-height:1.25;flex:1}
+.ex .tgt{font-size:11px;font-weight:800;color:var(--mut);background:var(--bg2);padding:5px 9px;border-radius:8px;border:1px solid var(--line);white-space:nowrap}
+.beat{margin:10px 0;font-size:12.5px;color:var(--mut);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.beat b{color:var(--ink)} .beat .tag{font-weight:800;color:var(--gold)}
+.cue{font-size:12.5px;color:var(--mut2);line-height:1.5;margin:8px 0 0;display:none}
+.cue.show{display:block}
+.cuebtn{font-size:11px;color:var(--mut);background:none;border:0;cursor:pointer;padding:4px 0;text-decoration:underline}
+.sets{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.setbox{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px}
+.setbox .sl{font-size:10px;font-weight:800;letter-spacing:.6px;color:var(--mut2);text-transform:uppercase;margin-bottom:7px}
+.inrow{display:flex;align-items:center;gap:6px}
+.inrow input{width:100%;background:#0b1322;border:1px solid var(--line);border-radius:9px;color:var(--ink);
+  font-size:18px;font-weight:800;text-align:center;padding:9px 4px;-moz-appearance:textfield}
+.inrow input::-webkit-outer-spin-button,.inrow input::-webkit-inner-spin-button{-webkit-appearance:none}
+.inrow input:focus{outline:2px solid var(--gold);border-color:transparent}
+.inrow .x{color:var(--mut2);font-weight:800;font-size:13px}
+.exfoot{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
+.e1{font-size:12px;color:var(--mut)} .e1 b{color:var(--ink);font-size:15px}
+.badge{font-size:11.5px;font-weight:800;padding:6px 10px;border-radius:9px}
+.badge.win{background:rgba(61,220,145,.18);color:var(--green)}
+.badge.miss{background:rgba(255,107,129,.16);color:var(--red)}
+.badge.base{background:rgba(232,190,78,.16);color:var(--gold)}
+.badge.add{background:rgba(240,185,85,.18);color:var(--amber)}
+/* body chart */
+canvas{width:100%;height:170px;display:block;margin-top:6px}
+.legend{display:flex;gap:14px;font-size:11px;color:var(--mut);margin-top:8px}
+.legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+/* phase map */
+.phase{display:flex;gap:12px;padding:12px;border-radius:12px;background:var(--card);border:1px solid var(--line);margin-bottom:10px;align-items:flex-start}
+.phase .no{font-size:22px;font-weight:900;color:var(--mut2);min-width:26px}
+.phase.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+.phase .pt{font-weight:800;font-size:14px} .phase .pd{font-size:12px;color:var(--mut);margin-top:3px;line-height:1.45}
+.phase .pm{font-size:11px;color:var(--mut2);margin-top:4px}
+/* history rows */
+.hrow{display:flex;justify-content:space-between;align-items:center;padding:11px 2px;border-bottom:1px solid var(--line);font-size:13px}
+.hrow:last-child{border:0}
+.hrow .d{color:var(--mut)} .hrow .w{font-weight:800}
+select.input,input.input{width:100%;background:#0b1322;border:1px solid var(--line);border-radius:11px;color:var(--ink);
+  font-size:15px;font-weight:700;padding:12px;margin-top:6px;-webkit-appearance:none}
+label.fl{font-size:12px;color:var(--mut);font-weight:700}
+.btn{border:0;border-radius:12px;padding:13px;font-weight:800;font-size:14px;cursor:pointer;width:100%}
+.btn.gold{background:var(--gold);color:#1a1300} .btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.btn:active{transform:scale(.98)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* bottom nav */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:40;
+  background:linear-gradient(180deg,rgba(13,20,34,.7),rgba(10,16,24,.96));
+  backdrop-filter:blur(20px);border-top:1px solid var(--line);
+  padding:8px 0 calc(8px + var(--safe-b))}
+.nav .row{max-width:560px;margin:0 auto;display:flex}
+.nav button{flex:1;background:none;border:0;color:var(--mut2);font-size:10.5px;font-weight:700;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px}
+.nav button .i{font-size:21px;line-height:1}
+.nav button.on{color:var(--gold)}
+/* sheet/modal */
+.sheet{position:fixed;inset:0;z-index:60;background:rgba(4,8,16,.6);backdrop-filter:blur(4px);display:none;align-items:flex-end}
+.sheet.open{display:flex}
+.sheet .panel{background:var(--bg);border-top-left-radius:24px;border-top-right-radius:24px;border-top:1px solid var(--line);
+  width:100%;max-width:560px;margin:0 auto;max-height:90vh;overflow:auto;padding:18px 18px calc(28px + var(--safe-b))}
+.sheet .grab{width:40px;height:4px;border-radius:3px;background:var(--line);margin:2px auto 14px}
+.field{margin:12px 0}
+.note{font-size:11.5px;color:var(--mut2);line-height:1.5;margin-top:5px}
+.toast{position:fixed;left:50%;bottom:calc(96px + var(--safe-b));transform:translateX(-50%) translateY(20px);
+  background:var(--green);color:#06110a;font-weight:800;font-size:13px;padding:11px 18px;border-radius:999px;
+  opacity:0;transition:.25s;z-index:80;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.synced{font-size:10px;font-weight:700;color:var(--mut2)}
+.hide{display:none!important}
+.center{text-align:center}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="row">
+  <div class="logo"><span class="dot"></span>PPL</div>
+  <div class="spacer"></div>
+  <div class="chip" id="phaseChip">Phase 1</div>
+  <div class="gear" id="settingsBtn">⚙</div>
+</div></div>
+
+<div class="wrap">
+  <div id="view-today"></div>
+  <div id="view-log" class="hide"></div>
+  <div id="view-body" class="hide"></div>
+  <div id="view-hist" class="hide"></div>
+</div>
+
+<div class="nav"><div class="row">
+  <button data-v="today" class="on"><span class="i">🏠</span>Today</button>
+  <button data-v="log"><span class="i">🏋️</span>Train</button>
+  <button data-v="body"><span class="i">📈</span>Body</button>
+  <button data-v="hist"><span class="i">📜</span>History</button>
+</div></div>
+
+<!-- settings sheet -->
+<div class="sheet" id="settingsSheet"><div class="panel">
+  <div class="grab"></div>
+  <h2 class="section" style="margin-top:0">Program</h2>
+  <div class="field"><label class="fl">Program start date</label><input class="input" type="date" id="s_start"></div>
+  <div class="field"><label class="fl">Last deload date</label><input class="input" type="date" id="s_deload"></div>
+  <div class="two">
+    <div class="field"><label class="fl">Height (cm)</label><input class="input" type="number" inputmode="decimal" id="s_height"></div>
+    <div class="field"><label class="fl">Goal weight (kg)</label><input class="input" type="number" inputmode="decimal" id="s_goal"></div>
+  </div>
+  <div class="field"><label class="fl">Start weight (kg)</label><input class="input" type="number" inputmode="decimal" id="s_startw"></div>
+
+  <h2 class="section">Cloud sync (Mac ↔ iPhone)</h2>
+  <p class="note">Paste your Firebase config once on each device, then use the <b>same sync code</b> on both. Leave blank to stay local-only. Full steps are in the README.</p>
+  <div class="field"><label class="fl">Firebase config (the { … } object)</label><textarea class="input" id="s_fbcfg" rows="5" style="font-family:ui-monospace,monospace;font-size:12px"></textarea></div>
+  <div class="field"><label class="fl">Sync code (your private key — same on all devices)</label><input class="input" id="s_synccode" placeholder="e.g. imthi-ppl-7Xk2"></div>
+  <button class="btn gold" id="s_connect" style="margin-top:6px">Connect sync</button>
+  <div class="center synced" id="syncState" style="margin-top:8px">Sync: local only</div>
+
+  <h2 class="section">Backup</h2>
+  <div class="two">
+    <button class="btn ghost" id="s_export">Export JSON</button>
+    <button class="btn ghost" id="s_import">Import JSON</button>
+  </div>
+  <input type="file" id="importFile" accept="application/json" class="hide">
+
+  <button class="btn ghost" id="s_save" style="margin-top:18px">Save &amp; close</button>
+  <button class="btn ghost" id="s_reset" style="margin-top:10px;color:var(--red)">Reset all data</button>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- data ---------------- */
+const PROGRAM = {
+ Push:[
+  {n:"Incline Smith Machine Press (30°)",lo:6,hi:9,inc:2.5,cue:"Lower controlled to 1\" above collarbone. Drive up & slightly back, pushing biceps into upper chest."},
+  {n:"Converging Seated Machine Press",lo:8,hi:11,inc:2.5,cue:"Pin shoulder blades into the pad. Drive handles together horizontally; don't let shoulders round at the top."},
+  {n:"High-to-Low Cable Flye",lo:10,hi:12,inc:1.25,cue:"Cables high. Press down & inward. Squeeze inside edges of chest hard for 1 sec at the bottom."},
+  {n:"Seated Dumbbell Lateral Raise",lo:10,hi:12,inc:1.0,cue:"Lean slightly forward. Drive DBs out, hands lower than elbows to keep stress on the side delts."},
+  {n:"V-Bar Tricep Pushdown",lo:8,hi:11,inc:1.25,cue:"Pin elbows to ribs, lean slightly forward. Push straight down, full lockout at the bottom."},
+ ],
+ Pull:[
+  {n:"Chest-Supported T-Bar Row",lo:6,hi:9,inc:2.5,cue:"Flare elbows 45°. Pull with the elbows, squeeze the shoulder blades tightly together at the top."},
+  {n:"Neutral Grip Lat Pulldown",lo:8,hi:11,inc:2.5,cue:"Pull down through the elbows. Chest high, drive elbows into your hip pockets for the lower lats."},
+  {n:"Seated Cable Face Pull",lo:10,hi:12,inc:1.25,cue:"Pull rope centre toward your nose while pulling hands apart. Focus rear delts & upper back."},
+  {n:"Incline Dumbbell Bicep Curl",lo:8,hi:11,inc:1.0,cue:"Bench 45°. Elbows pinned behind torso. Full stretch at bottom, curl without moving the shoulder."},
+ ],
+ Legs:[
+  {n:"Barbell RDL",lo:6,hi:9,inc:2.5,cue:"Push hips back, scraping bar down thighs. Stop when hips stop, then drive hips forward."},
+  {n:"Single-Leg Leg Press (per leg)",lo:8,hi:11,inc:2.5,cue:"Foot in middle of sled. Lower platform slowly until knee nears chest, then press up."},
+  {n:"Leg Extension",lo:10,hi:12,inc:2.5,cue:"Hold yourself into the seat with the handles. Pause 1 sec at full extension, control down."},
+  {n:"Seated Leg Curl",lo:8,hi:11,inc:2.5,cue:"Toes up, press hips into the seat, curl back. Control the eccentric completely."},
+  {n:"Standing Calf Raise",lo:10,hi:12,inc:2.5,cue:"Deep stretch 2 sec at the bottom, drive to a full peak contraction, lower slowly."},
+ ]
+};
+const DAYS=["Push","Pull","Legs"];
+const ACC={Push:"var(--push)",Pull:"var(--pull)",Legs:"var(--legs)"};
+
+/* ---------------- state ---------------- */
+const KEY="ppl_v1";
+// Your Firebase project (web API keys are public by design; access is controlled by Firestore rules + your sync code)
+const DEFAULT_FBCFG=JSON.stringify({
+  apiKey:"AIzaSyD9XjlcQGXNc15cuI54oYZJuxLGn7qxdRg",
+  authDomain:"workout-tracker-d1021.firebaseapp.com",
+  projectId:"workout-tracker-d1021",
+  storageBucket:"workout-tracker-d1021.firebasestorage.app",
+  messagingSenderId:"556455574747",
+  appId:"1:556455574747:web:a38270bae622a7ea22a0fe"
+});
+const DEFAULT_SYNC="imthi-ppl-77to88";  // same code on every device = shared data. Change it to anything private.
+function defState(){
+  const t=new Date(); const iso=t.toISOString().slice(0,10);
+  return {cfg:{start:iso,deload:iso,height:190,startw:77,goal:88,fbcfg:DEFAULT_FBCFG,synccode:DEFAULT_SYNC},
+    sessions:{}, body:[], lastDay:"Rest", updatedAt:Date.now()};
+}
+let S=load();
+function load(){try{return Object.assign(defState(),JSON.parse(localStorage.getItem(KEY)))}catch(e){return defState()}}
+function save(push=true){S.updatedAt=Date.now();localStorage.setItem(KEY,JSON.stringify(S));if(push)cloudPush();}
+
+/* ---------------- helpers ---------------- */
+const todayISO=()=>new Date().toISOString().slice(0,10);
+const fmtD=s=>{if(!s)return"—";const d=new Date(s+"T00:00");return d.toLocaleDateString(undefined,{day:"numeric",month:"short"})};
+const days=(a,b)=>Math.floor((new Date(b)-new Date(a))/864e5);
+const e1=(w,r)=>(w>0&&r>0)?w*(1+r/30):0;
+const bestE1=s=>Math.max(e1(s.s1w,s.s1r),e1(s.s2w,s.s2r));
+function monthOf(){return Math.max(1,Math.min(12,Math.floor(days(S.cfg.start,todayISO())/30.44)+1))}
+function weekOf(){return Math.max(1,Math.floor(days(S.cfg.start,todayISO())/7)+1)}
+function phase(){const m=monthOf();return m<=3?1:m<=9?2:3}
+function phaseName(){return["","Linear","Grinding","Conditioning"][phase()]}
+function sessOf(n){return (S.sessions[n]||[]).slice().sort((a,b)=>a.date<b.date?-1:1)}
+function lastSess(n){const a=sessOf(n);return a.length?a[a.length-1]:null}
+function loadNext(n,ex){const ls=lastSess(n);if(!ls)return null;const mn=Math.min(ls.s1r,ls.s2r);return mn>=ex.hi?ls.s1w+ex.inc:ls.s1w}
+function nextUp(){const i=DAYS.indexOf(S.lastDay);if(S.lastDay==="Rest")return"Push";if(i===2)return"Rest";return DAYS[i+1]||"Push"}
+function curWeight(){return S.body.length?S.body[S.body.length-1].kg:S.cfg.startw}
+function deload(){const w=Math.floor(days(S.cfg.deload,todayISO())/7);if(phase()<2)return{txt:"Not needed yet — ride linear progression.",c:"g",w};
+  if(w>=6)return{txt:"⚠ Deload week due — halve your sets, ~80% intensity, then update the date.",c:"r",w};
+  return{txt:`On track · next deload in ${7-w} week(s).`,c:"g",w}}
+
+/* ---------------- toast ---------------- */
+let tt;function toast(m){const e=document.getElementById("toast");e.textContent=m;e.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>e.classList.remove("show"),1600)}
+
+/* ---------------- views ---------------- */
+function renderToday(){
+  const nu=nextUp(), dl=deload(), cw=curWeight();
+  const wins=weekBeats();
+  const acc=nu==="Rest"?"var(--gold)":ACC[nu];
+  document.getElementById("phaseChip").textContent="Phase "+phase()+" · "+phaseName();
+  const pd={1:"Add weight or reps almost every session. Hit the top of the range → load the next increment. Bodyweight's climbing, so strength climbs with it.",
+    2:"Progress slows. Fight for ONE extra rep or +0.5–1 kg fractional plates. Smaller increments. Deload every 6–8 weeks.",
+    3:"In a deficit now — goal is to MAINTAIN your loads while leaning out. Beating the book = not losing weight on the bar."}[phase()];
+  document.getElementById("view-today").innerHTML=`
+   <div class="card hero">
+     <div class="glow" style="background:${acc}"></div>
+     <div class="lbl">Next up</div>
+     <div class="day" style="color:${acc}">${nu.toUpperCase()}</div>
+     <div class="meta">Week ${weekOf()} · Month ${monthOf()} of 12 · last: ${S.lastDay}</div>
+     ${nu!=="Rest"?`<button class="cta" onclick="go('log');setDay('${nu}')">Start ${nu} workout →</button>`
+       :`<button class="cta" style="background:var(--card2);color:var(--ink);border:1px solid var(--line)" onclick="markRest()">Log rest day ✓</button>`}
+   </div>
+   <div class="grid">
+     <div class="stat"><div class="k">Bodyweight</div><div class="v">${cw.toFixed(1)}<small> kg</small></div>
+       <div style="margin-top:6px"><span class="pill ${cw>=S.cfg.startw?'g':'a'}">${(cw-S.cfg.startw>=0?'+':'')}${(cw-S.cfg.startw).toFixed(1)} kg</span></div></div>
+     <div class="stat"><div class="k">To goal</div><div class="v">${(S.cfg.goal-cw).toFixed(1)}<small> kg</small></div>
+       <div style="margin-top:6px"><span class="pill a">target ${S.cfg.goal}</span></div></div>
+     <div class="stat"><div class="k">Beats this week</div><div class="v">${wins.win}<small> / ${wins.total}</small></div>
+       <div style="margin-top:6px"><span class="pill g">beat the book</span></div></div>
+     <div class="stat"><div class="k">Phase</div><div class="v" style="font-size:19px">${phaseName()}</div>
+       <div style="margin-top:6px"><span class="pill a">months ${phase()===1?'1–3':phase()===2?'4–9':'10–12'}</span></div></div>
+   </div>
+   <div class="card"><div class="sub">Phase focus</div><div style="font-size:13.5px;line-height:1.5;color:var(--ink)">${pd}</div></div>
+   <div class="card" style="border-color:${dl.c==='r'?'var(--red)':'var(--line)'}">
+     <div class="sub">Deload watch · ${dl.w} wks since</div>
+     <div style="font-size:13.5px;line-height:1.5;color:${dl.c==='r'?'var(--red)':'var(--green)'};font-weight:700">${dl.txt}</div>
+   </div>
+   <div class="card center" style="background:linear-gradient(120deg,#241d05,#1b2030);border-color:rgba(232,190,78,.35)">
+     <div style="font-size:11px;letter-spacing:1.5px;color:var(--gold);font-weight:800">THE GOLD RULE</div>
+     <div style="font-size:16px;font-weight:800;margin-top:6px">Beat the book.</div>
+     <div style="font-size:12.5px;color:var(--mut);margin-top:4px">Every session, beat last week by one rep or half a kilo.</div>
+   </div>`;
+}
+function weekBeats(){
+  let win=0,total=0;const since=new Date();since.setDate(since.getDate()-7);
+  for(const n in S.sessions){const a=sessOf(n);for(let i=0;i<a.length;i++){if(new Date(a[i].date)>=since){total++;if(i>0&&bestE1(a[i])>bestE1(a[i-1]))win++;}}}
+  return{win,total};
+}
+
+let curDay="Push";
+function setDay(d){curDay=d;go('log');renderLog();
+  document.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on',b.dataset.d===d));}
+function renderLog(){
+  const v=document.getElementById("view-log");
+  const segOn=d=>d===curDay?'on':'';
+  let html=`<div class="seg">${DAYS.map(d=>`<button data-d="${d}" class="${segOn(d)}" onclick="setDay('${d}')">${d}</button>`).join("")}</div>
+   <h2 class="section">${curDay} · log your sets</h2>`;
+  PROGRAM[curDay].forEach((ex,idx)=>{
+    const ls=lastSess(ex.n), ln=loadNext(ex.n,ex);
+    const beat=ls?`<b>${ls.s1w}kg ×${ls.s1r}/${ls.s2r}</b> · e1RM <span class="tag">${bestE1(ls).toFixed(1)}</span> <span style="color:var(--mut2)">(${fmtD(ls.date)})</span>`
+      :`<span style="color:var(--gold)">set your baseline today ★</span>`;
+    const pre=ln!=null?String(Math.round(ln*100)/100):"";
+    html+=`<div class="card ex" data-ex="${idx}">
+      <div class="top"><div class="name">${idx+1}. ${ex.n}</div><div class="tgt">${ex.lo}–${ex.hi}</div></div>
+      <div class="beat">▶ last: ${beat}</div>
+      <button class="cuebtn" onclick="this.nextElementSibling.classList.toggle('show')">▸ form cue</button>
+      <div class="cue">${ex.cue}</div>
+      <div class="sets">
+        ${setBox("Set 1","1",pre)}
+        ${setBox("Set 2","2",pre)}
+      </div>
+      <div class="exfoot">
+        <div class="e1">e1RM <b class="e1v">—</b></div>
+        <div class="badge base bdg">—</div>
+      </div>
+    </div>`;
+  });
+  html+=`<button class="cta" style="margin:6px 0 4px" onclick="saveDay()">Save ${curDay} session ✓</button>
+   <p class="note center" style="margin-bottom:8px">Saves every filled exercise under today's date and sets your next-up day.</p>`;
+  v.innerHTML=html;
+  v.querySelectorAll('.ex').forEach(card=>{
+    card.querySelectorAll('input').forEach(i=>i.addEventListener('input',()=>updEx(card)));
+    updEx(card);
+  });
+}
+function setBox(label,k,pre){return `<div class="setbox"><div class="sl">${label}</div>
+  <div class="inrow"><input inputmode="decimal" placeholder="kg" data-k="w${k}" value="${pre}"><span class="x">×</span>
+  <input inputmode="numeric" placeholder="reps" data-k="r${k}"></div></div>`}
+function exVals(card){const g=k=>parseFloat(card.querySelector(`[data-k="${k}"]`).value)||0;
+  return{s1w:g("w1"),s1r:g("r1"),s2w:g("w2"),s2r:g("r2")}}
+function updEx(card){
+  const idx=+card.dataset.ex, ex=PROGRAM[curDay][idx], v=exVals(card);
+  const be=Math.max(e1(v.s1w,v.s1r),e1(v.s2w,v.s2r));
+  card.querySelector(".e1v").textContent=be?be.toFixed(1):"—";
+  const bdg=card.querySelector(".bdg"); const ls=lastSess(ex.n);
+  const mn=Math.min(v.s1r,v.s2r);
+  if(!be){bdg.className="badge base bdg";bdg.textContent=ls?"ready":"baseline";return;}
+  if(mn>=ex.hi){bdg.className="badge add bdg";bdg.textContent="▲ ADD WEIGHT";return;}
+  if(!ls){bdg.className="badge base bdg";bdg.textContent="★ baseline";return;}
+  if(be>bestE1(ls)){bdg.className="badge win bdg";bdg.textContent="✓ BEAT IT";}
+  else{bdg.className="badge miss bdg";bdg.textContent="✗ beat next time";}
+}
+function saveDay(){
+  let saved=0;
+  document.querySelectorAll('#view-log .ex').forEach(card=>{
+    const idx=+card.dataset.ex, ex=PROGRAM[curDay][idx], v=exVals(card);
+    if(v.s1w&&v.s1r){(S.sessions[ex.n]=S.sessions[ex.n]||[]).push({date:todayISO(),...v});saved++;}
+  });
+  if(!saved){toast("Fill at least one set");return;}
+  S.lastDay=curDay; save(); toast(`${curDay} saved — ${saved} lifts logged`);
+  renderToday(); renderLog();
+}
+function markRest(){S.lastDay="Rest";save();toast("Rest day logged");renderToday();}
+
+function renderBody(){
+  const cw=curWeight(),bmi=cw/Math.pow(S.cfg.height/100,2);
+  const v=document.getElementById("view-body");
+  v.innerHTML=`<h2 class="section" style="margin-top:18px">Bodyweight</h2>
+   <div class="grid">
+     <div class="stat"><div class="k">Current</div><div class="v">${cw.toFixed(1)}<small> kg</small></div></div>
+     <div class="stat"><div class="k">Change</div><div class="v" style="color:var(--green)">${cw-S.cfg.startw>=0?'+':''}${(cw-S.cfg.startw).toFixed(1)}<small> kg</small></div></div>
+     <div class="stat"><div class="k">BMI</div><div class="v">${bmi.toFixed(1)}</div></div>
+     <div class="stat"><div class="k">To goal</div><div class="v">${(S.cfg.goal-cw).toFixed(1)}<small> kg</small></div></div>
+   </div>
+   <div class="card">
+     <div class="sub">Log weigh-in</div>
+     <div class="two"><input class="input" id="bw_date" type="date" value="${todayISO()}"><input class="input" id="bw_kg" type="number" inputmode="decimal" placeholder="kg"></div>
+     <button class="btn gold" style="margin-top:10px" onclick="addBW()">Add weigh-in</button>
+   </div>
+   <div class="card"><div class="sub">Trend · start ${S.cfg.startw} → goal ${S.cfg.goal}</div>
+     <canvas id="chart" width="600" height="300"></canvas>
+     <div class="legend"><span><i style="background:var(--gold)"></i>weight</span><span><i style="background:var(--green)"></i>goal</span></div>
+   </div>
+   <h2 class="section">12-month phase map</h2>
+   ${[[1,"1–3","Phase 1 · Linear Progression","Add weight/reps almost every session.","Lean surplus — gaining"],
+      [2,"4–9","Phase 2 · The Grinding Phase","Micro-progress, fractional plates, deload every 6–8 wks.","Continue surplus"],
+      [3,"10–12","Phase 3 · Final Conditioning","Maintain strength in a deficit while leaning out.","Caloric deficit — cut"]]
+     .map(p=>`<div class="phase ${phase()===p[0]?'on':''}"><div class="no">${p[0]}</div><div>
+       <div class="pt">${p[2]}</div><div class="pd">${p[3]}</div><div class="pm">Months ${p[1]} · ${p[4]}</div></div></div>`).join("")}`;
+  drawChart();
+}
+function addBW(){const d=document.getElementById("bw_date").value,k=parseFloat(document.getElementById("bw_kg").value);
+  if(!d||!k){toast("Enter date & weight");return;}
+  S.body=S.body.filter(b=>b.date!==d);S.body.push({date:d,kg:k});S.body.sort((a,b)=>a.date<b.date?-1:1);
+  save();toast("Weigh-in saved");renderBody();renderToday();}
+function drawChart(){
+  const c=document.getElementById("chart");if(!c)return;const ctx=c.getContext("2d");
+  const W=c.width,H=c.height,pad=34;ctx.clearRect(0,0,W,H);
+  const pts=S.body.slice();const goal=S.cfg.goal;
+  const vals=pts.map(p=>p.kg).concat([S.cfg.startw,goal]);
+  let mn=Math.min(...vals)-1,mx=Math.max(...vals)+1;if(mn===mx){mn-=2;mx+=2;}
+  const x=i=>pad+(W-pad*1.4)*(pts.length<=1?0.5:i/(pts.length-1));
+  const y=v=>H-pad-(H-pad*1.6)*((v-mn)/(mx-mn));
+  // grid
+  ctx.strokeStyle="rgba(255,255,255,.06)";ctx.lineWidth=1;
+  for(let g=0;g<=3;g++){const yy=pad+(H-pad*1.6)*g/3;ctx.beginPath();ctx.moveTo(pad,yy);ctx.lineTo(W-pad*0.4,yy);ctx.stroke();}
+  // goal line
+  ctx.strokeStyle="rgba(61,220,145,.55)";ctx.setLineDash([6,5]);ctx.beginPath();ctx.moveTo(pad,y(goal));ctx.lineTo(W-pad*0.4,y(goal));ctx.stroke();ctx.setLineDash([]);
+  if(pts.length){
+    ctx.strokeStyle="#e8be4e";ctx.lineWidth=3;ctx.beginPath();
+    pts.forEach((p,i)=>{const X=x(i),Y=y(p.kg);i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);});ctx.stroke();
+    const grd=ctx.createLinearGradient(0,pad,0,H);grd.addColorStop(0,"rgba(232,190,78,.25)");grd.addColorStop(1,"rgba(232,190,78,0)");
+    ctx.lineTo(x(pts.length-1),H-pad);ctx.lineTo(x(0),H-pad);ctx.closePath();ctx.fillStyle=grd;ctx.fill();
+    ctx.fillStyle="#e8be4e";pts.forEach((p,i)=>{ctx.beginPath();ctx.arc(x(i),y(p.kg),3.5,0,7);ctx.fill();});
+  }else{ctx.fillStyle="#62759b";ctx.font="13px -apple-system";ctx.textAlign="center";ctx.fillText("Log a weigh-in to see your trend",W/2,H/2);}
+  ctx.fillStyle="#62759b";ctx.font="11px -apple-system";ctx.textAlign="left";ctx.fillText(mx.toFixed(0)+"kg",4,y(mx)+4);ctx.fillText(mn.toFixed(0)+"kg",4,y(mn)+4);
+}
+
+let histEx=null;
+function renderHist(){
+  const all=[];for(const d of DAYS)for(const ex of PROGRAM[d])all.push(ex.n);
+  if(!histEx)histEx=all[0];
+  const a=sessOf(histEx).slice().reverse();
+  const pr=a.reduce((m,s)=>Math.max(m,bestE1(s)),0);
+  document.getElementById("view-hist").innerHTML=`<h2 class="section" style="margin-top:18px">History</h2>
+   <select class="input" id="histSel" onchange="histEx=this.value;renderHist()">
+     ${all.map(n=>`<option ${n===histEx?'selected':''}>${n}</option>`).join("")}</select>
+   <div class="card"><div class="sub">Best e1RM (your PR)</div><div style="font-size:30px;font-weight:900;color:var(--gold)">${pr?pr.toFixed(1):"—"}</div></div>
+   <div class="card"><div class="sub">${a.length} sessions</div>
+     ${a.length?a.map((s,i)=>{const prev=a[i+1];const up=prev&&bestE1(s)>bestE1(prev);
+       return `<div class="hrow"><span class="d">${fmtD(s.date)}</span>
+         <span>${s.s1w}kg ×${s.s1r}/${s.s2r}</span>
+         <span class="w" style="color:${up?'var(--green)':'var(--ink)'}">e1RM ${bestE1(s).toFixed(1)}${up?' ↑':''}</span></div>`}).join("")
+       :`<div class="center" style="color:var(--mut2);padding:14px">No sessions yet — go train.</div>`}
+   </div>`;
+}
+
+/* ---------------- nav ---------------- */
+function go(v){
+  ["today","log","body","hist"].forEach(x=>document.getElementById("view-"+x).classList.toggle("hide",x!==v));
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
+  if(v==="today")renderToday();if(v==="log")renderLog();if(v==="body")renderBody();if(v==="hist")renderHist();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>go(b.dataset.v));
+
+/* ---------------- settings ---------------- */
+const sheet=document.getElementById("settingsSheet");
+document.getElementById("settingsBtn").onclick=()=>{fillSettings();sheet.classList.add("open")};
+sheet.onclick=e=>{if(e.target===sheet)sheet.classList.remove("open")};
+function fillSettings(){
+  s_start.value=S.cfg.start;s_deload.value=S.cfg.deload;s_height.value=S.cfg.height;
+  s_goal.value=S.cfg.goal;s_startw.value=S.cfg.startw;s_fbcfg.value=S.cfg.fbcfg;s_synccode.value=S.cfg.synccode;
+  document.getElementById("syncState").textContent= fb? "Sync: connected ✓":"Sync: local only";
+}
+document.getElementById("s_save").onclick=()=>{
+  S.cfg.start=s_start.value;S.cfg.deload=s_deload.value;S.cfg.height=+s_height.value||190;
+  S.cfg.goal=+s_goal.value||88;S.cfg.startw=+s_startw.value||77;
+  save();sheet.classList.remove("open");go('today');toast("Saved");
+};
+document.getElementById("s_reset").onclick=()=>{if(confirm("Erase ALL local data?")){localStorage.removeItem(KEY);S=defState();sheet.classList.remove("open");go('today');}};
+document.getElementById("s_export").onclick=()=>{
+  const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="ppl-backup.json";a.click();
+};
+document.getElementById("s_import").onclick=()=>importFile.click();
+importFile.onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();
+  rd.onload=()=>{try{S=Object.assign(defState(),JSON.parse(rd.result));save();toast("Imported");go('today');fillSettings();}catch(x){toast("Bad file")}};rd.readAsText(f)};
+
+/* ---------------- cloud sync (Firebase, optional) ---------------- */
+let fb=null,fbDoc=null;
+document.getElementById("s_connect").onclick=()=>{
+  S.cfg.fbcfg=s_fbcfg.value.trim();S.cfg.synccode=s_synccode.value.trim();save(false);initCloud(true);
+};
+async function initCloud(announce){
+  if(!S.cfg.fbcfg||!S.cfg.synccode){return;}
+  try{
+    let raw=S.cfg.fbcfg.trim();const mt=raw.match(/\{[\s\S]*\}/);if(mt)raw=mt[0];
+    let cfg;try{cfg=JSON.parse(raw);}catch(_){
+      cfg=JSON.parse(raw.replace(/([{,]\s*)([A-Za-z_]\w*)\s*:/g,'$1"$2":').replace(/'/g,'"').replace(/,(\s*[}\]])/g,'$1'));}
+    const app=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+    const fs=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const a=app.initializeApp(cfg);const db=fs.getFirestore(a);
+    fbDoc=fs.doc(db,"trackers",S.cfg.synccode);fb=fs;
+    fs.onSnapshot(fbDoc,snap=>{
+      const r=snap.data();if(r&&r.updatedAt>(S.updatedAt||0)){S=Object.assign(defState(),r);localStorage.setItem(KEY,JSON.stringify(S));go('today');toast("Synced from cloud ↓");}
+    });
+    // push current if newer/none
+    const cur=await fs.getDoc(fbDoc);
+    if(!cur.exists()||(cur.data().updatedAt||0)<S.updatedAt)cloudPush();
+    if(announce){toast("Sync connected ✓");document.getElementById("syncState").textContent="Sync: connected ✓";}
+  }catch(e){if(announce)toast("Sync error — check config");console.warn(e);}
+}
+async function cloudPush(){if(fb&&fbDoc){try{await fb.setDoc(fbDoc,JSON.parse(JSON.stringify(S)))}catch(e){}}}
+
+/* ---------------- boot ---------------- */
+go('today');
+initCloud(false);
+if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{});}
+</script>
+</body>
+</html>
