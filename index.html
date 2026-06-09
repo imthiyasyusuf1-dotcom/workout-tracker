@@ -240,11 +240,12 @@ const DEFAULT_SYNC="imthi-ppl-77to88";  // same code on every device = shared da
 function defState(){
   const t=new Date(); const iso=t.toISOString().slice(0,10);
   return {cfg:{start:iso,deload:iso,height:190,startw:77,goal:88,fbcfg:DEFAULT_FBCFG,synccode:DEFAULT_SYNC},
-    sessions:{}, body:[], lastDay:"Rest", updatedAt:Date.now()};
+    sessions:{}, body:[], drafts:{}, lastDay:"Rest", updatedAt:Date.now()};
 }
 let S=load();
-function load(){try{return Object.assign(defState(),JSON.parse(localStorage.getItem(KEY)))}catch(e){return defState()}}
+function load(){try{const p=JSON.parse(localStorage.getItem(KEY));const s=Object.assign(defState(),p||{});if(!s.drafts)s.drafts={};return s;}catch(e){return defState()}}
 function save(push=true){S.updatedAt=Date.now();localStorage.setItem(KEY,JSON.stringify(S));if(push)cloudPush();}
+function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}  // for drafts: persist without bumping sync
 
 /* ---------------- helpers ---------------- */
 const todayISO=()=>new Date().toISOString().slice(0,10);
@@ -314,26 +315,31 @@ function weekBeats(){
 }
 
 let curDay="Push";
+function dispSets(s){return (+s.s1w===+s.s2w)?`${s.s1w}kg ×${s.s1r}/${s.s2r}`:`${s.s1w}×${s.s1r} · ${s.s2w}×${s.s2r}`}
 function setDay(d){curDay=d;go('log');renderLog();
   document.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on',b.dataset.d===d));}
 function renderLog(){
+  S.drafts=S.drafts||{};
   const v=document.getElementById("view-log");
   const segOn=d=>d===curDay?'on':'';
   let html=`<div class="seg">${DAYS.map(d=>`<button data-d="${d}" class="${segOn(d)}" onclick="setDay('${d}')">${d}</button>`).join("")}</div>
    <h2 class="section">${curDay} · log your sets</h2>`;
+  const dd=S.drafts[curDay]||{};
   PROGRAM[curDay].forEach((ex,idx)=>{
     const ls=lastSess(ex.n), ln=loadNext(ex.n,ex);
-    const beat=ls?`<b>${ls.s1w}kg ×${ls.s1r}/${ls.s2r}</b> · e1RM <span class="tag">${bestE1(ls).toFixed(1)}</span> <span style="color:var(--mut2)">(${fmtD(ls.date)})</span>`
+    const beat=ls?`<b>${dispSets(ls)}</b> · e1RM <span class="tag">${bestE1(ls).toFixed(1)}</span> <span style="color:var(--mut2)">(${fmtD(ls.date)})</span>`
       :`<span style="color:var(--gold)">set your baseline today ★</span>`;
-    const pre=ln!=null?String(Math.round(ln*100)/100):"";
+    const sug=ln!=null?String(Math.round(ln*100)/100):"";
+    const d=dd[ex.n];               // saved draft (raw strings) wins over the suggestion
+    const w1=d?d.s1w:sug, r1=d?d.s1r:"", w2=d?d.s2w:sug, r2=d?d.s2r:"";
     html+=`<div class="card ex" data-ex="${idx}">
       <div class="top"><div class="name">${idx+1}. ${ex.n}</div><div class="tgt">${ex.lo}–${ex.hi}</div></div>
       <div class="beat">▶ last: ${beat}</div>
       <button class="cuebtn" onclick="this.nextElementSibling.classList.toggle('show')">▸ form cue</button>
       <div class="cue">${ex.cue}</div>
       <div class="sets">
-        ${setBox("Set 1","1",pre)}
-        ${setBox("Set 2","2",pre)}
+        ${setBox("Set 1","1",w1,r1)}
+        ${setBox("Set 2","2",w2,r2)}
       </div>
       <div class="exfoot">
         <div class="e1">e1RM <b class="e1v">—</b></div>
@@ -342,20 +348,28 @@ function renderLog(){
     </div>`;
   });
   html+=`<button class="cta" style="margin:6px 0 4px" onclick="saveDay()">Save ${curDay} session ✓</button>
-   <p class="note center" style="margin-bottom:8px">Saves every filled exercise under today's date and sets your next-up day.</p>`;
+   <p class="note center" style="margin-bottom:8px">Entries auto-save as you type — they only go to History when you tap Save.</p>`;
   v.innerHTML=html;
   v.querySelectorAll('.ex').forEach(card=>{
     card.querySelectorAll('input').forEach(i=>i.addEventListener('input',()=>updEx(card)));
-    updEx(card);
+    updEx(card,true);   // refresh badges without re-writing drafts on initial render
   });
 }
-function setBox(label,k,pre){return `<div class="setbox"><div class="sl">${label}</div>
-  <div class="inrow"><input inputmode="decimal" placeholder="kg" data-k="w${k}" value="${pre}"><span class="x">×</span>
-  <input inputmode="numeric" placeholder="reps" data-k="r${k}"></div></div>`}
-function exVals(card){const g=k=>parseFloat(card.querySelector(`[data-k="${k}"]`).value)||0;
+function setBox(label,k,wv,rv){return `<div class="setbox"><div class="sl">${label}</div>
+  <div class="inrow"><input inputmode="decimal" placeholder="kg" data-k="w${k}" value="${wv??''}"><span class="x">×</span>
+  <input inputmode="numeric" placeholder="reps" data-k="r${k}" value="${rv??''}"></div></div>`}
+function rawVals(card){const g=k=>card.querySelector(`[data-k="${k}"]`).value.trim();
   return{s1w:g("w1"),s1r:g("r1"),s2w:g("w2"),s2r:g("r2")}}
-function updEx(card){
-  const idx=+card.dataset.ex, ex=PROGRAM[curDay][idx], v=exVals(card);
+function exVals(card){const r=rawVals(card);return{s1w:+r.s1w||0,s1r:+r.s1r||0,s2w:+r.s2w||0,s2r:+r.s2r||0}}
+function updEx(card,initial){
+  const idx=+card.dataset.ex, ex=PROGRAM[curDay][idx], v=exVals(card), raw=rawVals(card);
+  // AUTO-SAVE draft (raw strings) on every keystroke — survives app close, not yet in history
+  if(!initial){
+    S.drafts=S.drafts||{}; S.drafts[curDay]=S.drafts[curDay]||{};
+    if(raw.s1w||raw.s1r||raw.s2w||raw.s2r) S.drafts[curDay][ex.n]=raw;
+    else if(S.drafts[curDay][ex.n]) delete S.drafts[curDay][ex.n];
+    saveLocal();
+  }
   const be=Math.max(e1(v.s1w,v.s1r),e1(v.s2w,v.s2r));
   card.querySelector(".e1v").textContent=be?be.toFixed(1):"—";
   const bdg=card.querySelector(".bdg"); const ls=lastSess(ex.n);
@@ -367,12 +381,16 @@ function updEx(card){
   else{bdg.className="badge miss bdg";bdg.textContent="✗ beat next time";}
 }
 function saveDay(){
-  let saved=0;
+  let saved=0; const today=todayISO();
   document.querySelectorAll('#view-log .ex').forEach(card=>{
     const idx=+card.dataset.ex, ex=PROGRAM[curDay][idx], v=exVals(card);
-    if(v.s1w&&v.s1r){(S.sessions[ex.n]=S.sessions[ex.n]||[]).push({date:todayISO(),...v});saved++;}
+    if(v.s1w&&v.s1r){
+      const arr=(S.sessions[ex.n]||[]).filter(x=>x.date!==today);  // replace, don't duplicate, same-day re-saves
+      arr.push({date:today,...v}); S.sessions[ex.n]=arr; saved++;
+    }
   });
   if(!saved){toast("Fill at least one set");return;}
+  if(S.drafts) delete S.drafts[curDay];   // clear the working draft now it's committed
   S.lastDay=curDay; save(); toast(`${curDay} saved — ${saved} lifts logged`);
   renderToday(); renderLog();
 }
@@ -445,7 +463,7 @@ function renderHist(){
    <div class="card"><div class="sub">${a.length} sessions</div>
      ${a.length?a.map((s,i)=>{const prev=a[i+1];const up=prev&&bestE1(s)>bestE1(prev);
        return `<div class="hrow"><span class="d">${fmtD(s.date)}</span>
-         <span>${s.s1w}kg ×${s.s1r}/${s.s2r}</span>
+         <span>${dispSets(s)}</span>
          <span class="w" style="color:${up?'var(--green)':'var(--ink)'}">e1RM ${bestE1(s).toFixed(1)}${up?' ↑':''}</span></div>`}).join("")
        :`<div class="center" style="color:var(--mut2);padding:14px">No sessions yet — go train.</div>`}
    </div>`;
